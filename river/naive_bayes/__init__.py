@@ -5,5 +5,6 @@ from .bernoulli import BernoulliNB
 from .complement import ComplementNB
 from .gaussian import GaussianNB
 from .multinomial import MultinomialNB
+from .categorical import CategoricalNB
 
-__all__ = ["BernoulliNB", "ComplementNB", "GaussianNB", "MultinomialNB"]
+__all__ = ["BernoulliNB", "ComplementNB", "GaussianNB", "MultinomialNB", "CategoricalNB"]
