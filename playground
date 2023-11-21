@@ -1,0 +1,182 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The autoreload extension is already loaded. To reload it, use:\n",
+      "  %reload_ext autoreload\n"
+     ]
+    }
+   ],
+   "source": [
+    "%load_ext autoreload\n",
+    "%autoreload 2"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "\n",
+    "from river.naive_bayes import CategoricalNB\n",
+    "from river.feature_extraction import BagOfWords\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[{'Chinese': 2, 'Beijing': 1},\n",
+       " {'Chinese': 2, 'Shanghai': 1},\n",
+       " {'Chinese': 1, 'Macao': 1},\n",
+       " {'Tokyo': 1, 'Japan': 1, 'Chinese': 1}]"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "bow = BagOfWords(lowercase=False)\n",
+    "model = CategoricalNB()\n",
+    "docs = [\n",
+    "    (\"Chinese Beijing Chinese\", \"yes\"),\n",
+    "    (\"Chinese Chinese Shanghai\", \"yes\"),\n",
+    "    (\"Chinese Macao\", \"maybe\"),\n",
+    "    (\"Tokyo Japan Chinese\", \"no\")\n",
+    "]\n",
+    "\n",
+    "word_count = [bow.transform_one(x) for x,_ in docs]\n",
+    "word_count"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 50,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "KeyError",
+     "evalue": "'age'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mKeyError\u001b[0m                                  Traceback (most recent call last)",
+      "Cell \u001b[1;32mIn[50], line 18\u001b[0m\n\u001b[0;32m     14\u001b[0m sample \u001b[39m=\u001b[39m {\u001b[39m'\u001b[39m\u001b[39mage\u001b[39m\u001b[39m'\u001b[39m: \u001b[39m0\u001b[39m, \u001b[39m'\u001b[39m\u001b[39mincome\u001b[39m\u001b[39m'\u001b[39m: \u001b[39m0\u001b[39m}\n\u001b[0;32m     16\u001b[0m Y \u001b[39m=\u001b[39m [\u001b[39m1\u001b[39m,\u001b[39m1\u001b[39m,\u001b[39m0\u001b[39m,\u001b[39m1\u001b[39m,\u001b[39m0\u001b[39m]\n\u001b[1;32m---> 18\u001b[0m feature_count[\u001b[39m'\u001b[39;49m\u001b[39mage\u001b[39;49m\u001b[39m'\u001b[39;49m][\u001b[39m'\u001b[39m\u001b[39mincome\u001b[39m\u001b[39m'\u001b[39m][\u001b[39m'\u001b[39m\u001b[39my\u001b[39m\u001b[39m'\u001b[39m] \u001b[39m=\u001b[39m Y[\u001b[39m0\u001b[39m]\n\u001b[0;32m     20\u001b[0m \u001b[39m# logic\u001b[39;00m\n\u001b[0;32m     21\u001b[0m \u001b[39m# for i,t in X[0].items():\u001b[39;00m\n\u001b[0;32m     22\u001b[0m     \u001b[39m# feature_count[i][t] = Y[0]\u001b[39;00m\n\u001b[0;32m     23\u001b[0m \u001b[39m# print(feature_count)\u001b[39;00m\n",
+      "\u001b[1;31mKeyError\u001b[0m: 'age'"
+     ]
+    }
+   ],
+   "source": [
+    "feature_count = dict(dict(dict()))\n",
+    "\n",
+    "''' Assuming the values are ordinally encoded\n",
+    "age:\n",
+    "'''\n",
+    "X = [\n",
+    "    {'age': 2, 'income': 1},\n",
+    "    {'age': 1, 'income': 0},\n",
+    "    {'age': 0, 'income': 1},\n",
+    "    {'age': 2, 'income': 1},\n",
+    "    {'age': 1, 'income': 1},\n",
+    "]\n",
+    "\n",
+    "sample = {'age': 0, 'income': 0}\n",
+    "\n",
+    "Y = [1,1,0,1,0]\n",
+    "\n",
+    "feature_count['age']['income']['y'] = Y[0]\n",
+    "\n",
+    "# logic\n",
+    "# for i,t in X[0].items():\n",
+    "    # feature_count[i][t] = Y[0]\n",
+    "# print(feature_count)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 51,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "defaultdict(collections.Counter, {})"
+      ]
+     },
+     "execution_count": 51,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from collections import *\n",
+    "d = defaultdict(Counter)\n",
+    "d"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 62,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "ValueError",
+     "evalue": "dictionary update sequence element #0 has length 5; 2 is required",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mValueError\u001b[0m                                Traceback (most recent call last)",
+      "Cell \u001b[1;32mIn[62], line 1\u001b[0m\n\u001b[1;32m----> 1\u001b[0m d\u001b[39m.\u001b[39;49mupdate({\u001b[39m\"\u001b[39;49m\u001b[39mhello\u001b[39;49m\u001b[39m\"\u001b[39;49m})\n",
+      "\u001b[1;31mValueError\u001b[0m: dictionary update sequence element #0 has length 5; 2 is required"
+     ]
+    }
+   ],
+   "source": [
+    "d.update({\"hello\"})"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3.10.0 64-bit",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.0"
+  },
+  "orig_nbformat": 4,
+  "vscode": {
+   "interpreter": {
+    "hash": "d65b8f5352ff0604208092e5303e87151b1b24d58dbb14532ef76eb8f35f61a8"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
