@@ -4,7 +4,7 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
-# from scipy import sparse
+from scipy import sparse
 
 from . import base
 
@@ -48,11 +48,20 @@ class CategoricalNB(base.BaseNB):
                         label=y)) for i,t in x.items()])
                 for y in self.class_counts.keys()}
 
-    def learn_many(self):
+    def learn_many(self, X: pd.DataFrame, y: pd.Series):
+        y = base.one_hot_encode(y)
+        classes = str(y.columns).lower()
+        y = sparse.csc_matrix(y).T
+
+        # update class counts
+        for label, count in zip(classes, y.sum(axis=1)):
+            self.class_counts[label] += count.item()
+
+        # update feature count
+
+        
+
         return self
 
-    def _feature_log_prob(self):
-        pass
-
-    def joint_log_likelihood_many(self):
+    def joint_log_likelihood_many(self): 
         pass
