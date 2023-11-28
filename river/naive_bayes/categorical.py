@@ -33,7 +33,6 @@ class CategoricalNB(base.BaseNB):
         return self
 
     def p_feature_given_class(self, feature, category, label):
-        # under work
 
         num = self.feature_counts.get(f"{feature}_{category}", {}).get(label,0) + self.alpha
         print(num)
@@ -72,6 +71,13 @@ class CategoricalNB(base.BaseNB):
 
 
     def joint_log_likelihood_many(self): 
+        """ !!! Under construction !!!
+        -----
+        TODO
+        - Handle missing features
+        - Use sparse matrix approach for efficiency
+        """
+        
         pass
 
     def _encodeX(self, df: pd.DataFrame):

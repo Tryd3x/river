@@ -22,8 +22,10 @@
     "from pprint import pprint\n",
     "from sys import getsizeof\n",
     "\n",
-    "from river.naive_bayes import MultinomialNB,CategoricalNB, base\n",
-    "from river.feature_extraction import BagOfWords"
+    "from river.naive_bayes import MultinomialNB, CategoricalNB, base\n",
+    "from river.feature_extraction import BagOfWords\n",
+    "from river.compose import Pipeline\n",
+    "from scipy import sparse"
    ]
   },
   {
@@ -32,108 +34,41 @@
    "metadata": {},
    "outputs": [
     {
-     "data": {
-      "text/plain": [
-       "[{'chinese': 2, 'beijing': 1},\n",
-       " {'chinese': 2, 'shanghai': 1},\n",
-       " {'chinese': 1, 'macao': 1},\n",
-       " {'tokyo': 1, 'japan': 1, 'chinese': 1}]"
-      ]
-     },
-     "execution_count": 3,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
-   "source": [
-    "# dummy\n",
-    "mul = MultinomialNB()\n",
-    "\n",
-    "docs = [\n",
-    "    (\"Chinese Beijing Chinese\", \"yes\"),\n",
-    "    (\"Chinese Chinese Shanghai\", \"yes\"),\n",
-    "    (\"Chinese Macao\", \"maybe\"),\n",
-    "    (\"Tokyo Japan Chinese\", \"no\")\n",
-    "]\n",
-    "\n",
-    "X  = []\n",
-    "\n",
-    "fx = BagOfWords(lowercase=True)\n",
-    "for doc,_ in docs:\n",
-    "    X.append(fx.transform_one(doc))\n",
-    "# pd.DataFrame(X)\n",
-    "X"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 4,
-   "metadata": {},
-   "outputs": [
-    {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "defaultdict(<function <lambda> at 0x000001D3BC06FA30>,\n",
-      "            {'age': defaultdict(<function <lambda>.<locals>.<lambda> at 0x000001D3BC06F9A0>,\n",
-      "                                {'junior': defaultdict(<class 'int'>,\n",
-      "                                                       {'Yes': 2}),\n",
-      "                                 'senior': defaultdict(<class 'int'>,\n",
-      "                                                       {'No': 1,\n",
-      "                                                        'Yes': 1}),\n",
-      "                                 'young': defaultdict(<class 'int'>,\n",
-      "                                                      {'No': 1})}),\n",
-      "             'income': defaultdict(<function <lambda>.<locals>.<lambda> at 0x000001D3BC06FAC0>,\n",
-      "                                   {'fair': defaultdict(<class 'int'>,\n",
-      "                                                        {'No': 2,\n",
-      "                                                         'Yes': 2}),\n",
-      "                                    'poor': defaultdict(<class 'int'>,\n",
-      "                                                        {'Yes': 1})})})\n"
+      "   chinese  beijing  shanghai  macao  tokyo  japan\n",
+      "0        2        1         0      0      0      0\n",
+      "1        2        0         1      0      0      0\n",
+      "2        1        0         0      1      0      0\n",
+      "3        1        0         0      0      1      1\n",
+      "       0  1  2  3\n",
+      "maybe  0  0  1  0\n",
+      "no     0  0  0  1\n",
+      "yes    1  1  0  0\n"
      ]
-    },
-    {
-     "data": {
-      "text/plain": [
-       "240"
-      ]
-     },
-     "execution_count": 4,
-     "metadata": {},
-     "output_type": "execute_result"
     }
    ],
    "source": [
-    "feature_count = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))\n",
+    "# X = pd.Series([\n",
+    "#    \"Chinese Beijing Chinese\",\n",
+    "#    \"Chinese Chinese Shanghai\",\n",
+    "#    \"Chinese Macao\",\n",
+    "#    \"Tokyo Japan Chinese\"\n",
+    "# ])\n",
+    "# y = pd.Series([\"yes\", \"yes\", \"maybe\", \"no\"])\n",
+    "# fx = BagOfWords(lowercase=True)\n",
+    "# model = MultinomialNB()\n",
     "\n",
-    "''' Assuming the values are ordinally encoded\n",
-    "age:\n",
-    "'''\n",
-    "X = [\n",
-    "    {'age': \"senior\", 'income': \"fair\"},\n",
-    "    {'age': \"junior\", 'income': \"poor\"},\n",
-    "    {'age': \"young\", 'income': \"fair\"},\n",
-    "    {'age': \"senior\", 'income': \"fair\"},\n",
-    "    {'age': \"junior\", 'income': \"fair\"},\n",
-    "]\n",
     "\n",
-    "Y = [\"Yes\",\"Yes\",\"No\",\"No\",\"Yes\"]\n",
-    "\n",
-    "'''\n",
-    "i = feature\n",
-    "t = value of feature\n",
-    "y = class\n",
-    "'''\n",
-    "\n",
-    "for sample, label in zip(X,Y):\n",
-    "    for i,t in sample.items():\n",
-    "        feature_count[i][t][label]+=1\n",
-    "pprint(feature_count)\n",
-    "getsizeof(feature_count)"
+    "# X = fx.transform_many(X)\n",
+    "# print(X)\n",
+    "# print(base.one_hot_encode(y).T)\n"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 5,
+   "execution_count": 6,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -156,31 +91,29 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 6,
+   "execution_count": 7,
    "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "defaultdict(<class 'int'>, {'yes': 3, 'no': 2})\n"
-     ]
-    }
-   ],
+   "outputs": [],
    "source": [
     "# Test cases\n",
     "sample = {'age': 'young', 'income': 'fair'}\n",
     "\n",
     "# pprint(model.feature_counts)\n",
     "\n",
-    "pprint(model.class_counts)\n",
+    "# pprint(model.class_counts)\n",
+    "\n",
+    "# pprint(model.category_counts)\n",
     "\n",
     "\n",
     "# print(\"P(y = 'yes') =\",model.class_counts.get('yes'))\n",
     "\n",
     "# print(f\"P(age='young'|y='yes') = {model.p_feature_given_class(feature='age', category = 'young', label ='yes')}\")\n",
     "\n",
+    "# print(f\"P(age='young'|y='no') = {model.p_feature_given_class(feature='age', category = 'young', label ='no')}\")\n",
+    "\n",
     "# print(f\"P(income='fair'|y='yes') = {model.p_feature_given_class(feature='income', category = 'fair', label ='yes')}\")\n",
+    "\n",
+    "# print(f\"P(income='fair'|y='yes') = {model.p_feature_given_class(feature='income', category = 'fair', label ='no')}\")\n",
     "\n",
     "# print(f\"P(y='yes') = {model.p_class('yes')}\")\n",
     "# print(f\"P(y='no') = {model.p_class('no')}\")\n",
@@ -193,258 +126,100 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 43,
+   "execution_count": 61,
    "metadata": {},
    "outputs": [],
    "source": [
-    "from sklearn.preprocessing import OneHotEncoder\n",
-    "\n",
-    "\n",
-    "encoder = OneHotEncoder()\n",
-    "\n",
+    "def showInfo(matrix,verbose=True, args=False):\n",
+    "    \"\"\"\n",
+    "    returns data, indices, pointers\n",
+    "    \"\"\"\n",
+    "    data = matrix.data\n",
+    "    indices = matrix.indices\n",
+    "    pointers = matrix.indptr\n",
+    "    if verbose:\n",
+    "        print(f\"Format: {matrix.getformat()}\")\n",
+    "        print(f\"Shape: {matrix.shape}\")\n",
+    "        print(f\"Data: {data}\")\n",
+    "        print(f\"Indices: {indices}\")\n",
+    "        print(f\"Pointers: {pointers}\")\n",
+    "    if args:\n",
+    "        return data, indices, pointers"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 49,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def encodeX(df: pd.DataFrame):\n",
+    "    feature_subsets = []\n",
+    "    for col in df.columns:\n",
+    "        temp = base.one_hot_encode(df[col])\n",
+    "        temp.columns = [f\"{col}_{temp_col}\" for temp_col in temp.columns]\n",
+    "        feature_subsets.append(temp)\n",
+    "    \n",
+    "    return pd.concat(feature_subsets,axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 97,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "     age_junior  age_senior  age_young  income_fair  income_poor\n",
+      "no            1           0          0            1            0\n",
+      "yes           0           2          1            2            1\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "defaultdict(<function river.naive_bayes.categorical.CategoricalNB.__init__.<locals>.<lambda>()>,\n",
+       "            {'age_junior': defaultdict(int, {'no': 1}),\n",
+       "             'income_fair': defaultdict(int, {'no': 1, 'yes': 2}),\n",
+       "             'age_senior': defaultdict(int, {'yes': 2}),\n",
+       "             'age_young': defaultdict(int, {'yes': 1}),\n",
+       "             'income_poor': defaultdict(int, {'yes': 1})})"
+      ]
+     },
+     "execution_count": 97,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
     "newX = pd.DataFrame([\n",
     "    {'age': \"senior\"  , 'income': \"fair\"},\n",
     "    {'age': \"junior\", 'income': \"fair\"},\n",
     "    {'age': \"young\", 'income': \"fair\"},\n",
     "    {'age': \"senior\"  , 'income': \"poor\"},\n",
     "])\n",
+    "newY = pd.Series([\"Yes\", \"No\", \"Yes\",\"Yes\"])\n",
     "\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 14,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "def showInfo(matrix):\n",
-    "    print(f\"Data: {matrix.data}\")\n",
-    "    print(f\"Indices: {matrix.indices}\")\n",
-    "    print(f\"Pointers: {matrix.indptr}\")\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 15,
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "(2, 3)\n"
-     ]
-    }
-   ],
-   "source": [
-    "from scipy import sparse\n",
+    "X2 = encodeX(newX)\n",
+    "y2 = base.one_hot_encode(newY)\n",
+    "features, classes = X2.columns, [str(c).lower() for c in y2.columns]\n",
+    "sparseX2 = sparse.csr_matrix(X2)\n",
+    "sparseY2 = sparse.csc_matrix(y2).T\n",
     "\n",
-    "new_Y = [\"Yes\", \"No\", \"Yes\"]\n",
-    "y = base.one_hot_encode(pd.Series(new_Y))\n",
-    "classes = str(y.columns).lower()\n",
-    "# print(classes)\n",
+    "fc = sparseY2 @ sparseX2\n",
     "\n",
-    "y = sparse.csc_matrix(y).T\n",
-    "print(y.shape)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 16,
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "defaultdict(<class 'int'>, {'yes': 3, 'no': 2})\n",
-      "defaultdict(<class 'int'>, {'yes': 3, 'no': 2, 'i': 1, 'n': 2})\n"
-     ]
-    }
-   ],
-   "source": [
-    "print(model.class_counts)\n",
+    "# Visual purpose\n",
+    "df_fc = pd.DataFrame(fc.todense(),columns=features,index=classes)\n",
+    "print(df_fc)\n",
     "\n",
-    "for label, count in zip(classes,y.sum(axis=1)):\n",
-    "    # print(f\"{label} : {count.item()}\")\n",
-    "    model.class_counts[str(label).lower()] += count.item()\n",
-    "    \n",
-    "print(model.class_counts)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 17,
-   "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "text/plain": [
-       "<2x3 sparse matrix of type '<class 'numpy.int64'>'\n",
-       "\twith 3 stored elements in Compressed Sparse Row format>"
-      ]
-     },
-     "execution_count": 17,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
-   "source": [
-    "y"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 23,
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "[[0 1 0]\n",
-      " [1 0 1]]\n",
-      "(2, 3)\n"
-     ]
-    }
-   ],
-   "source": [
-    "print(y.todense())\n",
-    "print(y.todense().shape)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 33,
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "[[0 1 0]\n",
-      " [1 0 0]\n",
-      " [0 0 1]]\n",
-      "(3, 3)\n"
-     ]
-    }
-   ],
-   "source": [
-    "print(sparse.csr_matrix(base.one_hot_encode(newX['age'])).todense())\n",
-    "print(sparse.csr_matrix(base.one_hot_encode(newX['age'])).todense().shape)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 45,
-   "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "text/html": [
-       "<div>\n",
-       "<style scoped>\n",
-       "    .dataframe tbody tr th:only-of-type {\n",
-       "        vertical-align: middle;\n",
-       "    }\n",
-       "\n",
-       "    .dataframe tbody tr th {\n",
-       "        vertical-align: top;\n",
-       "    }\n",
-       "\n",
-       "    .dataframe thead th {\n",
-       "        text-align: right;\n",
-       "    }\n",
-       "</style>\n",
-       "<table border=\"1\" class=\"dataframe\">\n",
-       "  <thead>\n",
-       "    <tr style=\"text-align: right;\">\n",
-       "      <th></th>\n",
-       "      <th>junior</th>\n",
-       "      <th>senior</th>\n",
-       "      <th>young</th>\n",
-       "      <th>fair</th>\n",
-       "      <th>poor</th>\n",
-       "    </tr>\n",
-       "  </thead>\n",
-       "  <tbody>\n",
-       "    <tr>\n",
-       "      <th>0</th>\n",
-       "      <td>0</td>\n",
-       "      <td>1</td>\n",
-       "      <td>0</td>\n",
-       "      <td>1</td>\n",
-       "      <td>0</td>\n",
-       "    </tr>\n",
-       "    <tr>\n",
-       "      <th>1</th>\n",
-       "      <td>1</td>\n",
-       "      <td>0</td>\n",
-       "      <td>0</td>\n",
-       "      <td>1</td>\n",
-       "      <td>0</td>\n",
-       "    </tr>\n",
-       "    <tr>\n",
-       "      <th>2</th>\n",
-       "      <td>0</td>\n",
-       "      <td>0</td>\n",
-       "      <td>1</td>\n",
-       "      <td>1</td>\n",
-       "      <td>0</td>\n",
-       "    </tr>\n",
-       "    <tr>\n",
-       "      <th>3</th>\n",
-       "      <td>0</td>\n",
-       "      <td>1</td>\n",
-       "      <td>0</td>\n",
-       "      <td>0</td>\n",
-       "      <td>1</td>\n",
-       "    </tr>\n",
-       "  </tbody>\n",
-       "</table>\n",
-       "</div>"
-      ],
-      "text/plain": [
-       "   junior  senior  young  fair  poor\n",
-       "0       0       1      0     1     0\n",
-       "1       1       0      0     1     0\n",
-       "2       0       0      1     1     0\n",
-       "3       0       1      0     0     1"
-      ]
-     },
-     "execution_count": 45,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
-   "source": [
-    "encodedX = pd.DataFrame()\n",
-    "encodedAge = base.one_hot_encode(newX['age'])\n",
-    "encodedIncome = base.one_hot_encode(newX['income'])"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 50,
-   "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "text/plain": [
-       "matrix([[0, 1, 0, 1, 0],\n",
-       "        [1, 0, 0, 1, 0],\n",
-       "        [0, 0, 1, 1, 0],\n",
-       "        [0, 1, 0, 0, 1]], dtype=int64)"
-      ]
-     },
-     "execution_count": 50,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
-   "source": [
-    "sparse.csc_matrix(pd.concat([encodedAge,encodedIncome], axis=1)).todense()"
+    "nb = CategoricalNB()\n",
+    "nb.learn_many(newX,pd.Series(newY))\n",
+    "\n",
+    "nb.feature_counts\n",
+    "\n",
+    "nb.join"
    ]
   }
  ],
