@@ -35,7 +35,6 @@ class CategoricalNB(base.BaseNB):
     def p_feature_given_class(self, feature, category, label):
 
         num = self.feature_counts.get(f"{feature}_{category}", {}).get(label,0) + self.alpha
-        print(num)
         den = self.class_counts[label] + self.alpha * len(self.category_counts[feature])
 
         return num/den
@@ -67,7 +66,11 @@ class CategoricalNB(base.BaseNB):
         fc = y @ X
 
         for r,c in zip(*fc.nonzero()):
+            i,t = features[c].split("_")
+            self.category_counts[i].add(t)
             self.feature_counts[features[c]][classes[r]] += fc[r,c]
+        
+        return self
 
 
     def joint_log_likelihood_many(self): 
@@ -88,3 +91,9 @@ class CategoricalNB(base.BaseNB):
             feature_subsets.append(temp)
         
         return pd.concat(feature_subsets,axis=1)
+    
+    def _resetState(self, alpha = 1.0):
+        self.alpha = alpha
+        self.class_counts = defaultdict(int)
+        self.feature_counts = defaultdict(lambda: defaultdict(int))
+        self.category_counts = defaultdict(set)

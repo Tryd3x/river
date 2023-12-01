@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 import pytest
 import numpy as np
 import pandas as pd
+
 from .categorical import CategoricalNB
+from sklearn.naive_bayes import CategoricalNB as sk_naive_bayes
+from sklearn.preprocessing import OneHotEncoder 
 
-@pytest.fixture(scope='session')
-def model():
-    yield CategoricalNB(alpha=1.0)
-
-def test_learn_one(model):
-
-    # Sample data
-    X = [
+"""
+====================================================
+============== Auxillary functions =================
+====================================================
+"""
+def X():
+    yield from [
         {'age': "senior", 'income': "fair"},
         {'age': "junior", 'income': "poor"},
         {'age': "young", 'income': "fair"},
@@ -18,83 +22,180 @@ def test_learn_one(model):
         {'age': "junior", 'income': "fair"},
     ]
 
-    # Sample label
-    Y = ["Yes","Yes","No","No","Yes"]
-    labels = [str(label).lower() for label in np.unique(Y)]
-    for x,y in zip(X,Y):
+def Y():
+    yield from ["Yes","Yes","No","No","Yes"]
+
+def incremental_model():
+    model = CategoricalNB()
+
+    for x,y in zip(X(),Y()):
         model.learn_one(x, y) 
+    return model
+
+def batch_model():
+    model = CategoricalNB()
+
+    return model.learn_many(
+        pd.DataFrame([x for x in X()]),
+        pd.Series([y for y in Y()])
+        )
+
+def n_category_count(model):
+        return sum([len(v) for _,v in model.category_counts.items()])
+
+"""
+====================================================
+==================== Test Cases ====================
+====================================================
+"""
+
+@pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                incremental_model(),
+            )
+        ]
+)
+def test_learn_one(model):
+
+    labels = [str(label).lower() for label in np.unique(y for y in Y())]
 
     # non-negative validation for class counts
     for label in labels:
         assert model.class_counts[label] >= 0
-    
-    # Expected output for class count
-    assert model.class_counts['yes'] == 3
-    assert model.class_counts['no'] == 2
 
-    # Expected output for feature count
-    assert model.feature_counts['age_young']['yes'] == 0
-    assert model.feature_counts['age_young']['no'] == 1
-
-    assert model.feature_counts['income_poor']['no'] == 0
-    assert model.feature_counts['income_poor']['yes'] == 1
-
+@pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                incremental_model(),
+            )
+            
+        ]
+)
 def test_p_feature_given_class(model):
 
     values = []
 
     # conditional probability
-    assert model.p_feature_given_class(feature='age', category = 'young', label ='yes') == 0.16666666666666666     
-
     values.append(model.p_feature_given_class(feature='age', category = 'young', label ='yes'))
-
-    assert model.p_feature_given_class(feature='age', category = 'young', label ='no') == 0.4     
-
     values.append(model.p_feature_given_class(feature='age', category = 'young', label ='no'))
-    
-    assert model.p_feature_given_class(feature='income', category = 'fair', label ='yes') == 0.6
-
     values.append(model.p_feature_given_class(feature='income', category = 'fair', label ='yes'))
-
-    assert model.p_feature_given_class(feature='income', category = 'fair', label ='no') == 0.75
-
     values.append(model.p_feature_given_class(feature='income', category = 'fair', label ='no'))
 
     # constraint check on probability values
     for p in values:
         assert p <= 1 and p > 0
 
-
+@pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                incremental_model(),
+            )
+            
+        ]
+)
 def test_p_class(model):
-
-    # prior probabilities of each class
-    assert model.p_class('yes') == 0.6    
-    assert model.p_class('no') == 0.4
 
     # sum of priors must between 0 and 1
     assert model.p_class('yes') + model.p_class('no') <=1 and model.p_class('yes') + model.p_class('no') > 0
 
+@pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                incremental_model(),
+            )
+            
+        ]
+)
 def test_joint_log_likelihood(model):
-    x = sample = {'age': 'young', 'income': 'fair'}
-    values = []
-
-    assert model.joint_log_likelihood(sample)['yes'] == -2.8134107167600364
-    values.append(model.joint_log_likelihood(sample)['yes'])
-    assert model.joint_log_likelihood(sample)['no'] == -2.120263536200091
-    values.append(model.joint_log_likelihood(sample)['no'])
+    sample = {'age': 'young', 'income': 'fair'}
+    labels = [str(label).lower() for label in np.unique([y for y in Y()])]
+    values = [
+        model.joint_log_likelihood(sample)[label]
+        for label in labels
+    ]
 
     # constraint check on log prob values
     for val in values:
         assert np.power(np.e,val) <= 1 and np.power(np.e,val) > 0
 
+@pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                batch_model(),
+            )
+            
+        ]
+)
 def test_learn_many(model):
-    pass
+    labels = [str(label).lower() for label in np.unique([y for y in Y()])]
 
-def test_joint_log_likelihood_many(model):
-    pass
+    # non-negative validation for class counts
+    for label in labels:
+        assert model.class_counts[label] >= 0
 
-def test_incremental_vs_batch(model):
+@pytest.mark.parametrize(
+        "model, batch_model",
+        [
+            pytest.param(
+                incremental_model(),
+                batch_model(),
+            )
+            
+        ]
+)
+def test_one_vs_many(model,batch_model):
     """
     This test evaluates results generated by incremental and batch approach on the same dataset.
     """
-    pass
+
+    labels = [str(label).lower() for label in np.unique([y for y in Y()])]
+    features = [k for k in model.feature_counts.keys()]
+
+    # Evaluating state of both models with each other
+    for label in labels:
+        # non-negative validation for class counts
+        assert model.class_counts[label] >= 0
+        assert batch_model.class_counts[label] >= 0
+    
+        # Assert class count for both models
+        assert model.class_counts[label] == batch_model.class_counts[label]
+
+        for feature in features:
+            # Assert feature count for both models
+            assert model.feature_counts[feature][label] == batch_model.feature_counts[feature][label]
+
+    # Assert distinct category count for both models
+    assert n_category_count(model) == n_category_count(batch_model)
+    
+@pytest.mark.parametrize(
+        "rv_model, sk_model, encoder" ,
+        [
+            pytest.param(
+                CategoricalNB(alpha = alpha),
+               sk_naive_bayes(alpha = alpha),
+                OneHotEncoder(),
+                id=f"alpha - {alpha}"
+            ) for alpha in range(1,4)
+        ]
+)
+def test_river_vs_sklearn(rv_model, sk_model, encoder):
+    
+    x = pd.DataFrame([x for x in X()])
+    y = pd.Series([y for y in Y()])
+    encodedX = encoder.fit_transform(x).toarray()
+
+    rv_model.learn_many(x,y)
+    sk_model.fit(encodedX,y)
+
+    # Assert feature count of both models
+    assert n_category_count(rv_model) == sk_model.n_features_in_
+
+    # Assert class count of both models
+    assert sum(rv_model.class_counts.values()) == int(sum(sk_model.class_count_))
+

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import pytest
 
 collect_ignore = []
 
@@ -23,3 +24,6 @@ try:
     import vaex  # noqa: F401
 except ImportError:
     collect_ignore.append("stream/iter_vaex.py")
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "reset_state: custom marker to reset state of model before test execution")
