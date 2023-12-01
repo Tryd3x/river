@@ -25,15 +25,15 @@ def X():
 def Y():
     yield from ["Yes","Yes","No","No","Yes"]
 
-def incremental_model():
-    model = CategoricalNB()
+def incremental_model(alpha = 1.0):
+    model = CategoricalNB(alpha = alpha)
 
     for x,y in zip(X(),Y()):
         model.learn_one(x, y) 
     return model
 
-def batch_model():
-    model = CategoricalNB()
+def batch_model(alpha = 1.0):
+    model = CategoricalNB(alpha = alpha)
 
     return model.learn_many(
         pd.DataFrame([x for x in X()]),
@@ -53,8 +53,10 @@ def n_category_count(model):
         "model",
         [
             pytest.param(
-                incremental_model(),
+                incremental_model(alpha = alpha),
+                 id=f"alpha - {alpha}"
             )
+            for alpha in range(1,4)
         ]
 )
 def test_learn_one(model):
@@ -69,20 +71,20 @@ def test_learn_one(model):
         "model",
         [
             pytest.param(
-                incremental_model(),
+                incremental_model(alpha = alpha),
+                 id=f"alpha - {alpha}"
             )
-            
+            for alpha in range(1,4)
         ]
 )
 def test_p_feature_given_class(model):
 
     values = []
-
+    labels = [str(label).lower() for label in np.unique([y for y in Y()])]
     # conditional probability
-    values.append(model.p_feature_given_class(feature='age', category = 'young', label ='yes'))
-    values.append(model.p_feature_given_class(feature='age', category = 'young', label ='no'))
-    values.append(model.p_feature_given_class(feature='income', category = 'fair', label ='yes'))
-    values.append(model.p_feature_given_class(feature='income', category = 'fair', label ='no'))
+    for label in labels:
+        values.append(model.p_feature_given_class(feature='age', category = 'young', label =label))
+        values.append(model.p_feature_given_class(feature='income', category = 'fair', label =label))
 
     # constraint check on probability values
     for p in values:
@@ -92,8 +94,10 @@ def test_p_feature_given_class(model):
         "model",
         [
             pytest.param(
-                incremental_model(),
+                incremental_model(alpha = alpha),
+                 id=f"alpha - {alpha}"
             )
+            for alpha in range(1,4)
             
         ]
 )
@@ -106,30 +110,31 @@ def test_p_class(model):
         "model",
         [
             pytest.param(
-                incremental_model(),
+                incremental_model(alpha = alpha),
+                id=f"alpha - {alpha}"
             )
-            
+            for alpha in range(1,4)
         ]
 )
 def test_joint_log_likelihood(model):
-    sample = {'age': 'young', 'income': 'fair'}
     labels = [str(label).lower() for label in np.unique([y for y in Y()])]
     values = [
         model.joint_log_likelihood(sample)[label]
-        for label in labels
+        for label in labels for sample in X()
     ]
 
     # constraint check on log prob values
     for val in values:
-        assert np.power(np.e,val) <= 1 and np.power(np.e,val) > 0
+        assert val < 0
 
 @pytest.mark.parametrize(
         "model",
         [
             pytest.param(
-                batch_model(),
+                batch_model(alpha = alpha),
+                 id=f"alpha - {alpha}"
             )
-            
+            for alpha in range (1,4)
         ]
 )
 def test_learn_many(model):
@@ -143,10 +148,10 @@ def test_learn_many(model):
         "model, batch_model",
         [
             pytest.param(
-                incremental_model(),
-                batch_model(),
-            )
-            
+                incremental_model(alpha = alpha),
+                batch_model(alpha = alpha),
+                id=f"alpha - {alpha}"
+            ) for alpha in range(1,4)
         ]
 )
 def test_one_vs_many(model,batch_model):
@@ -159,18 +164,18 @@ def test_one_vs_many(model,batch_model):
 
     # Evaluating state of both models with each other
     for label in labels:
-        # non-negative validation for class counts
+        # Phase1: non-negative validation for class counts
         assert model.class_counts[label] >= 0
         assert batch_model.class_counts[label] >= 0
     
-        # Assert class count for both models
+        # Phase2: Assert class count for both models
         assert model.class_counts[label] == batch_model.class_counts[label]
 
+        # Phase3: Assert feature count for both models
         for feature in features:
-            # Assert feature count for both models
             assert model.feature_counts[feature][label] == batch_model.feature_counts[feature][label]
 
-    # Assert distinct category count for both models
+    # Phase4:  Assert distinct category count for both models
     assert n_category_count(model) == n_category_count(batch_model)
     
 @pytest.mark.parametrize(
